@@ -99,21 +99,29 @@ body::before {
 /* Manos con fondo distintivo */
 .hand {
   position: relative;
-  padding: 8px 10px;
-  z-index: 2;
-  border-radius: 12px;
-  margin: 0 8px;
+  margin-left: 8px;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+  color: var(--royal-gold-light);
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  font-family: 'Playfair Display', serif;
 }
 
 .dealer-hand {
   margin-top: 130px;
   background: rgba(26, 26, 26, 0.4);
+  border-radius: 12px;
+  padding: 8px 10px;
   border: 2px solid rgba(201, 169, 97, 0.3);
 }
 
 .player-hand {
-  margin-top: 30px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   background: rgba(26, 26, 26, 0.6);
+  border-radius: 12px;
+  padding: 8px 10px;
   border: 2px solid rgba(201, 169, 97, 0.5);
 }
 
@@ -404,19 +412,19 @@ body::before {
   padding: 8px 14px;
 }
 
-/* Botones laterales */
+/* Botones de acción (antes laterales) */
 .side-buttons {
-  position: absolute;
-  right: 10px;
-  top: 280px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  width: 100%;
 }
 
 .btn.side {
-  width: 95px;
-  font-size: 12px;
+  width: 110px;
+  font-size: 13px;
 }
 
 /* Barra inferior premium */

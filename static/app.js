@@ -85,13 +85,13 @@ function renderState(state) {
   clearBet.disabled = !can("clear_bet");
 
   if (state.phase === "BETTING") {
-    btnMain.textContent = "DEAL";
+    btnMain.textContent = "REPARTIR";
     btnMain.disabled = !can("deal");
   } else if (state.phase === "END") {
-    btnMain.textContent = "NEW ROUND";
+    btnMain.textContent = "NUEVA RONDA";
     btnMain.disabled = !can("new_round");
   } else {
-    btnMain.textContent = "DEAL";
+    btnMain.textContent = "REPARTIR";
     btnMain.disabled = true;
   }
 }

@@ -49,7 +49,7 @@ def get_game():
             "bet": 0,
             "bank": 500,
             "phase": "BETTING",  # BETTING, PLAYER, DEALER, END
-            "message": "PLACE YOUR BET",
+            "message": "HAZ TU APUESTA",
         }
     return g
 
@@ -115,9 +115,9 @@ def api_bet():
     amount = int(data.get("amount", 0))
     if amount > 0 and g["bet"] + amount <= g["bank"]:
         g["bet"] += amount
-        set_message(g, f"BET: ${g['bet']}")
+        set_message(g, f"APUESTA: ${g['bet']}")
     else:
-        set_message(g, "NOT ENOUGH MONEY")
+        set_message(g, "FONDOS INSUFICIENTES")
     save_game(g)
     return jsonify(serialize_state(g))
 
@@ -126,7 +126,7 @@ def api_clear_bet():
     g = get_game()
     if g["phase"] == "BETTING":
         g["bet"] = 0
-        set_message(g, "BET CLEARED")
+        set_message(g, "APUESTA BORRADA")
     save_game(g)
     return jsonify(serialize_state(g))
 
@@ -136,11 +136,11 @@ def api_deal():
     if g["phase"] != "BETTING":
         return jsonify(serialize_state(g))
     if g["bet"] <= 0:
-        set_message(g, "PLACE A BET")
+        set_message(g, "HAZ UNA APUESTA")
         save_game(g)
         return jsonify(serialize_state(g))
     if g["bet"] > g["bank"]:
-        set_message(g, "NOT ENOUGH MONEY")
+        set_message(g, "FONDOS INSUFICIENTES")
         save_game(g)
         return jsonify(serialize_state(g))
 
@@ -168,14 +168,14 @@ def resolve_blackjack(g):
     p = is_blackjack(g["player"])
     d = is_blackjack(g["dealer"])
     if p and d:
-        set_message(g, "PUSH")
+        set_message(g, "EMPATE")
     elif p:
         win = int(g["bet"] * 1.5)
         g["bank"] += win
-        set_message(g, f"BLACKJACK! +${win}")
+        set_message(g, f"¡BLACKJACK! +${win}")
     else:
         g["bank"] -= g["bet"]
-        set_message(g, "DEALER BLACKJACK")
+        set_message(g, "BLACKJACK DEL DEALER")
     g["phase"] = "END"
 
 @app.route("/api/hit", methods=["POST"])
@@ -186,7 +186,7 @@ def api_hit():
     draw_card(g, "player")
     if hand_value(g["player"]) > 21:
         g["bank"] -= g["bet"]
-        set_message(g, "BUST")
+        set_message(g, "TE PASASTE")
         g["phase"] = "END"
     save_game(g)
     return jsonify(serialize_state(g))
@@ -203,15 +203,15 @@ def api_stand():
     dv = hand_value(g["dealer"])
     if dv > 21:
         g["bank"] += g["bet"]
-        set_message(g, "DEALER BUST • YOU WIN")
+        set_message(g, "DEALER SE PASÓ • GANASTE")
     elif pv > dv:
         g["bank"] += g["bet"]
-        set_message(g, "YOU WIN")
+        set_message(g, "GANASTE")
     elif pv < dv:
         g["bank"] -= g["bet"]
-        set_message(g, "YOU LOSE")
+        set_message(g, "PERDISTE")
     else:
-        set_message(g, "PUSH")
+        set_message(g, "EMPATE")
     g["phase"] = "END"
     save_game(g)
     return jsonify(serialize_state(g))
@@ -228,7 +228,7 @@ def api_double():
     g["bet"] *= 2
     draw_card(g, "player")
     if hand_value(g["player"]) > 21:
-        set_message(g, "BUST")
+        set_message(g, "TE PASASTE")
         g["phase"] = "END"
     else:
         # como en casino: doble = 1 carta y stand automático
@@ -238,11 +238,11 @@ def api_double():
         dv = hand_value(g["dealer"])
         if dv > 21 or pv > dv:
             g["bank"] += g["bet"]
-            set_message(g, "YOU WIN")
+            set_message(g, "GANASTE")
         elif pv < dv:
-            set_message(g, "YOU LOSE")
+            set_message(g, "PERDISTE")
         else:
-            set_message(g, "PUSH")
+            set_message(g, "EMPATE")
         g["phase"] = "END"
     save_game(g)
     return jsonify(serialize_state(g))
@@ -254,7 +254,7 @@ def api_new_round():
     g["dealer"] = []
     g["bet"] = 0
     g["phase"] = "BETTING"
-    set_message(g, "PLACE YOUR BET")
+    set_message(g, "HAZ TU APUESTA")
     save_game(g)
     return jsonify(serialize_state(g))
 
