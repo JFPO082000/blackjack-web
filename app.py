@@ -51,6 +51,12 @@ def get_game():
             "phase": "BETTING",  # BETTING, PLAYER, DEALER, END
             "message": "HAZ TU APUESTA",
         }
+    
+    # Recarga automática si está en bancarrota
+    if g["bank"] < 5 and g["bet"] == 0:
+        g["bank"] = 500
+        g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
+        
     return g
 
 def save_game(g):
