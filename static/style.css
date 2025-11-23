@@ -446,8 +446,9 @@ body::before {
 }
 
 .btn.side {
-  width: 110px;
-  font-size: 13px;
+  width: 130px;
+  font-size: 11px;
+  padding: 10px 4px;
 }
 
 /* Barra inferior premium */
