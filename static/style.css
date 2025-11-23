@@ -114,6 +114,7 @@ body::before {
   border-radius: 12px;
   padding: 8px 10px;
   border: 2px solid rgba(201, 169, 97, 0.3);
+  min-height: 80px;
 }
 
 .player-hand {
@@ -123,6 +124,7 @@ body::before {
   border-radius: 12px;
   padding: 8px 10px;
   border: 2px solid rgba(201, 169, 97, 0.5);
+  min-height: 80px;
 }
 
 .hand-label {
