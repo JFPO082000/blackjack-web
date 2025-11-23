@@ -1,41 +1,74 @@
-/* static/style.css */
+/* Royal Crumbs Premium Blackjack - Style */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --royal-black: #1a1a1a;
+  --royal-black-light: #252525;
+  --royal-gold: #C9A961;
+  --royal-gold-light: #D4AF37;
+  --royal-gold-dark: #B8941F;
+  --royal-green: #1a4d3e;
+  --royal-green-light: #2d6b57;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
-  background: #202020;
+  background: var(--royal-black);
   color: #f5f5f5;
   display: flex;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Patrón de fondo con símbolos de cartas */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(201, 169, 97, 0.02) 100px, rgba(201, 169, 97, 0.02) 200px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .game-root {
   width: 390px;
   height: 780px;
-  background: #202020;
+  background: var(--royal-black);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Mesa semicircular con borde dorado */
+.table {
+  height: 260px;
+  background: var(--royal-black);
   position: relative;
   overflow: hidden;
 }
 
-/* Mesa semicircular */
-.table {
-  height: 260px;
-  background: #202020;
-  position: relative;
-  overflow: hidden;
-}
 .table::before {
   content: "";
   position: absolute;
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  background: #2d9684;
-  border: 10px solid #d2d2d2;
+  background: linear-gradient(135deg, var(--royal-green) 0%, var(--royal-green-light) 100%);
+  border: 8px solid var(--royal-gold);
+  box-shadow: 
+    0 0 20px rgba(201, 169, 97, 0.3),
+    inset 0 0 40px rgba(0, 0, 0, 0.3);
   left: 50%;
   top: -360px;
   transform: translateX(-50%);
@@ -47,23 +80,33 @@ body {
   width: 100%;
   text-align: center;
   font-size: 13px;
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.5px;
+  z-index: 2;
 }
+
 .table-text .sub {
   font-size: 11px;
   opacity: 0.9;
+  font-family: 'Inter', sans-serif;
 }
+
 .table-text .accent {
-  color: #AB925C;
+  color: var(--royal-gold-light);
+  font-weight: 600;
 }
 
 /* Manos */
 .hand {
   position: relative;
   padding: 4px 10px;
+  z-index: 2;
 }
+
 .dealer-hand {
   margin-top: 130px;
 }
+
 .player-hand {
   margin-top: 30px;
 }
@@ -72,6 +115,9 @@ body {
   font-size: 10px;
   opacity: 0.7;
   margin-left: 16px;
+  letter-spacing: 1px;
+  color: var(--royal-gold);
+  font-weight: 600;
 }
 
 .cards {
@@ -81,128 +127,252 @@ body {
   padding-left: 16px;
 }
 
+/* Cartas con diseño premium */
 .card {
   width: 52px;
   height: 74px;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  border: 2px solid var(--royal-gold);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 0 10px rgba(201, 169, 97, 0.2);
   position: relative;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
+  animation: cardSlideIn 0.3s ease-out;
+  transition: transform 0.2s ease;
 }
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
 .card.red { color: #e74c3c; }
 .card.black { color: #2c3e50; }
+
 .card .corner {
   position: absolute;
   top: 3px;
   left: 4px;
   font-size: 11px;
+  font-weight: 700;
 }
+
 .card .suit {
-  font-size: 20px;
+  font-size: 22px;
 }
+
 .card.back {
-  background: #AB925C;
-  color: #202020;
+  background: linear-gradient(135deg, var(--royal-gold-dark) 0%, var(--royal-gold) 50%, var(--royal-gold-dark) 100%);
+  color: var(--royal-black);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 18px;
+  border: 2px solid var(--royal-gold-light);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(212, 175, 55, 0.4);
 }
 
 .hand-value {
   position: absolute;
   right: 70px;
   top: 12px;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: #111;
+  background: linear-gradient(135deg, var(--royal-black-light) 0%, var(--royal-black) 100%);
+  border: 2px solid var(--royal-gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--royal-gold-light);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
-/* Mensaje */
+/* Mensaje con animación */
 .message {
-  margin-top: 4px;
+  margin-top: 8px;
   text-align: center;
-  font-size: 18px;
-  color: #AB925C;
-  min-height: 26px;
+  font-size: 20px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--royal-gold-light);
+  min-height: 28px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: messagePulse 1s ease-in-out;
+}
+
+@keyframes messagePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); }
 }
 
 /* Centro: BET + fichas */
 .center-area {
-  margin-top: 8px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bet-circle {
-  width: 90px;
-  height: 90px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  background: #111;
-  border: 3px solid #AB925C;
+  background: linear-gradient(135deg, var(--royal-black) 0%, var(--royal-black-light) 100%);
+  border: 4px solid var(--royal-gold);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(201, 169, 97, 0.3),
+    inset 0 2px 8px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--royal-gold);
 }
+
 #bet-amount {
-  margin-top: 2px;
-  font-size: 18px;
+  margin-top: 4px;
+  font-size: 22px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--royal-gold-light);
 }
 
 .chips-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* Fichas premium con efecto dorado */
 .chip {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  font-size: 15px;
+  border: 4px solid var(--royal-gold);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(201, 169, 97, 0.2);
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  font-family: 'Playfair Display', serif;
 }
-.chip-5   { background: #000; color: #fff; }
-.chip-25  { background: #e74c3c; }
-.chip-100 { background: #3498db; }
-.chip-500 { background: #9b59b6; }
 
-/* Botones */
+.chip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.chip:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.7),
+    0 0 20px rgba(201, 169, 97, 0.5);
+  filter: brightness(1.1);
+}
+
+.chip:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.chip-5   { 
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  color: var(--royal-gold-light);
+}
+
+.chip-25  { 
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  color: #fff;
+}
+
+.chip-100 { 
+  background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+  color: #fff;
+}
+
+.chip-500 { 
+  background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+  color: #fff;
+}
+
+/* Botones premium */
 .btn {
-  border: none;
-  border-radius: 18px;
-  background: #e0e0e0;
-  color: #202020;
-  font-weight: 600;
+  border: 2px solid var(--royal-gold);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--royal-gold-dark) 0%, var(--royal-gold) 50%, var(--royal-gold-dark) 100%);
+  color: var(--royal-black);
+  font-weight: 700;
   cursor: pointer;
-  padding: 8px 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.2s;
+  padding: 10px 18px;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(201, 169, 97, 0.3);
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 13px;
 }
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.7),
+    0 0 25px rgba(212, 175, 55, 0.5);
+  filter: brightness(1.15);
+}
+
 .btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  opacity: 0.3;
+  cursor: not-allowed;
   box-shadow: none;
+  filter: grayscale(0.5);
 }
-.btn:active {
-  transform: translateY(1px) scale(0.97);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.6),
+    0 0 10px rgba(201, 169, 97, 0.2);
 }
 
 .btn.small {
-  font-size: 12px;
+  font-size: 11px;
+  padding: 8px 14px;
 }
 
 /* Botones laterales */
@@ -212,42 +382,75 @@ body {
   top: 280px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.btn.side {
-  width: 90px;
+  gap: 12px;
 }
 
-/* Barra inferior */
+.btn.side {
+  width: 95px;
+  font-size: 12px;
+}
+
+/* Barra inferior premium */
 .bottom-bar {
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 90px;
-  background: #161616;
+  height: 95px;
+  background: linear-gradient(180deg, var(--royal-black) 0%, var(--royal-black-light) 100%);
+  border-top: 3px solid var(--royal-gold);
+  box-shadow: 0 -4px 20px rgba(201, 169, 97, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .btn.main {
-  width: 170px;
-  height: 40px;
-  border-radius: 20px;
+  width: 180px;
+  height: 44px;
+  border-radius: 22px;
+  font-size: 15px;
+  letter-spacing: 1px;
 }
 
 .bank-display {
-  background: #333;
+  background: linear-gradient(135deg, var(--royal-black-light) 0%, var(--royal-black) 100%);
+  border: 2px solid var(--royal-gold);
   border-radius: 20px;
-  padding: 6px 24px;
-  font-size: 16px;
+  padding: 6px 28px;
+  font-size: 17px;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: var(--royal-gold-light);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.5),
+    0 0 12px rgba(201, 169, 97, 0.2);
 }
 
-/* Mensaje de fase */
-.hand .hand-value {
-  background: #111;
-  color: #f5f5f5;
+/* Efectos adicionales de lujo */
+.bet-circle,
+.chip,
+.btn,
+.card,
+.bank-display {
+  position: relative;
 }
 
+/* Brillo sutil en elementos dorados */
+@keyframes subtleGlow {
+  0%, 100% { 
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(201, 169, 97, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 4px 8px rgba(0, 0, 0, 0.6),
+      0 0 18px rgba(201, 169, 97, 0.4);
+  }
+}
+
+.bet-circle {
+  animation: subtleGlow 3s ease-in-out infinite;
+}

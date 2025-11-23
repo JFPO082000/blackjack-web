@@ -9,17 +9,19 @@ async function api(path, body, method = "POST") {
   return await res.json();
 }
 
-function renderCard(card, hidden) {
+function renderCard(card, hidden, index = 0) {
   const div = document.createElement("div");
   if (hidden) {
     div.className = "card back";
     div.textContent = "RC";
+    div.style.animationDelay = `${index * 0.1}s`;
     return div;
   }
 
   const [rank, suit] = card;
   const isRed = suit === "♥" || suit === "♦";
   div.className = "card " + (isRed ? "red" : "black");
+  div.style.animationDelay = `${index * 0.1}s`;
 
   const corner = document.createElement("div");
   corner.className = "corner";
@@ -54,12 +56,12 @@ function renderState(state) {
   // Dealer cards
   state.dealer.forEach((card, index) => {
     const hidden = state.dealer_hidden && index === 1;
-    dealerCards.appendChild(renderCard(card, hidden));
+    dealerCards.appendChild(renderCard(card, hidden, index));
   });
 
   // Player cards
-  state.player.forEach(card => {
-    playerCards.appendChild(renderCard(card, false));
+  state.player.forEach((card, index) => {
+    playerCards.appendChild(renderCard(card, false, index));
   });
 
   // Values
@@ -78,9 +80,9 @@ function renderState(state) {
   const can = a => actions.includes(a);
 
   btnDouble.disabled = !can("double");
-  btnHit.disabled    = !can("hit");
-  btnStand.disabled  = !can("stand");
-  clearBet.disabled  = !can("clear_bet");
+  btnHit.disabled = !can("hit");
+  btnStand.disabled = !can("stand");
+  clearBet.disabled = !can("clear_bet");
 
   if (state.phase === "BETTING") {
     btnMain.textContent = "DEAL";
