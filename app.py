@@ -88,7 +88,8 @@ def allowed_actions(g):
 
 @app.route("/")
 def index():
-    # Servir la interfaz web
+    # Reiniciar juego al cargar la página
+    session.clear()
     return send_from_directory("static", "index.html")
 
 @app.route("/api/state", methods=["GET"])
