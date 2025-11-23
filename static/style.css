@@ -257,7 +257,7 @@ body::before {
 
 /* Centro: BET + fichas */
 .center-area {
-  margin-top: 12px;
+  margin-top: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
