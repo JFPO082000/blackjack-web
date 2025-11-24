@@ -2,6 +2,7 @@
 from flask import Flask, session, jsonify, send_from_directory, request
 import random
 import os
+from firebase_config import get_user_balance, update_user_balance
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 app.secret_key = os.environ.get("SECRET_KEY", "super-secret-dev-key")  # cámbialo en producción
@@ -41,13 +42,20 @@ def is_blackjack(hand):
 def get_game():
     """Obtiene el estado actual desde la sesión o crea uno nuevo."""
     g = session.get("game")
+    user_id = session.get("user_id")
+    
     if not g:
+        # Cargar saldo inicial desde Firebase si hay user_id
+        initial_bank = 500
+        if user_id:
+            initial_bank = get_user_balance(user_id)
+        
         g = {
             "deck": new_deck(),
             "player": [],
             "dealer": [],
             "bet": 0,
-            "bank": 500,
+            "bank": initial_bank,
             "phase": "BETTING",  # BETTING, PLAYER, DEALER, END
             "message": "HAZ TU APUESTA",
         }
@@ -56,11 +64,18 @@ def get_game():
     if g["bank"] < 5 and g["bet"] == 0:
         g["bank"] = 500
         g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
+        # Actualizar en Firebase
+        if user_id:
+            update_user_balance(user_id, g["bank"])
         
     return g
 
 def save_game(g):
     session["game"] = g
+    # Sincronizar saldo con Firebase si hay user_id
+    user_id = session.get("user_id")
+    if user_id:
+        update_user_balance(user_id, g["bank"])
 
 def draw_card(g, who):
     if not g["deck"]:
@@ -88,8 +103,16 @@ def allowed_actions(g):
 
 @app.route("/")
 def index():
+    # Obtener user_id de query params
+    user_id = request.args.get('user_id')
+    
     # Reiniciar juego al cargar la página
     session.clear()
+    
+    # Guardar user_id en sesión si existe
+    if user_id:
+        session["user_id"] = user_id
+    
     return send_from_directory("static", "index.html")
 
 @app.route("/api/state", methods=["GET"])
