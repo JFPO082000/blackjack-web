@@ -1,5 +1,103 @@
 // static/app.js
 
+// ===== CAPA DE SEGURIDAD =====
+// Prevenir teclas de desarrollador y atajos
+document.addEventListener('keydown', function(e) {
+  // F12 - DevTools
+  if (e.key === 'F12' || e.keyCode === 123) {
+    e.preventDefault();
+    return false;
+  }
+  
+  // Ctrl+Shift+I - Inspector
+  // Ctrl+Shift+J - Console
+  // Ctrl+Shift+C - Selector de elementos
+  // Ctrl+U - Ver código fuente
+  if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
+    e.preventDefault();
+    return false;
+  }
+  
+  if (e.ctrlKey && e.key === 'u') {
+    e.preventDefault();
+    return false;
+  }
+  
+  // Ctrl+S - Guardar página
+  if (e.ctrlKey && e.key === 's') {
+    e.preventDefault();
+    return false;
+  }
+  
+  // Ctrl+P - Imprimir
+  if (e.ctrlKey && e.key === 'p') {
+    e.preventDefault();
+    return false;
+  }
+});
+
+// Prevenir clic derecho (menú contextual)
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Prevenir selección de texto
+document.addEventListener('selectstart', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Prevenir copiar
+document.addEventListener('copy', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Prevenir cortar
+document.addEventListener('cut', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Prevenir pegar
+document.addEventListener('paste', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Prevenir arrastre
+document.addEventListener('dragstart', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+// Detectar si DevTools está abierto (método adicional)
+(function() {
+  const devtools = /./;
+  devtools.toString = function() {
+    this.opened = true;
+  };
+  
+  const checkDevTools = setInterval(function() {
+    console.log('%c', devtools);
+    if (devtools.opened) {
+      // DevTools detectado - puedes agregar acciones aquí si lo deseas
+      devtools.opened = false;
+    }
+  }, 1000);
+})();
+
+// Deshabilitar console.log en producción (opcional)
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  console.log = function() {};
+  console.warn = function() {};
+  console.error = function() {};
+  console.info = function() {};
+  console.debug = function() {};
+}
+// ===== FIN CAPA DE SEGURIDAD =====
+
 async function api(path, body, method = "POST") {
   const res = await fetch(path, {
     method,
