@@ -51,7 +51,7 @@ def get_game():
     user_id = session.get("user_id")
     
     if not g:
-        # Cargar saldo inicial desde Firebase si hay user_id
+        # Cargar saldo inicial desde PostgreSQL si hay user_id
         initial_bank = 500
         if user_id:
             initial_bank = get_user_balance(user_id)
@@ -70,7 +70,7 @@ def get_game():
     if g["bank"] < 5 and g["bet"] == 0:
         g["bank"] = 500
         g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
-        # Actualizar en Firebase
+        # Actualizar en PostgreSQL
         if user_id:
             update_user_balance(user_id, g["bank"])
         
@@ -78,7 +78,7 @@ def get_game():
 
 def save_game(g):
     session["game"] = g
-    # Sincronizar saldo con Firebase si hay user_id
+    # Sincronizar saldo con PostgreSQL si hay user_id
     user_id = session.get("user_id")
     if user_id:
         update_user_balance(user_id, g["bank"])
