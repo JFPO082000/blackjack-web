@@ -2,7 +2,7 @@
 from flask import Flask, session, jsonify, send_from_directory, request, make_response
 import random
 import os
-from db_config import get_user_balance, update_user_balance, registrar_usuario_nuevo, verificar_usuario
+from db_config import get_user_balance, update_user_balance
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 app.secret_key = os.environ.get("SECRET_KEY", "super-secret-dev-key")
@@ -153,60 +153,12 @@ def index():
     
     return send_from_directory("static", "index.html")
 
+
 @app.route("/api/state", methods=["GET"])
 def api_state():
     g = get_game()
     save_game(g)
     return jsonify(serialize_state(g))
-
-@app.route("/api/registrar", methods=["POST"])
-def api_registrar():
-    """
-    Endpoint para registrar nuevos usuarios desde App Inventor.
-    Recibe: nombre, apellido, curp, email, password
-    """
-    datos = request.get_json(force=True)
-    
-    # Validar campos obligatorios
-    campos_requeridos = ['nombre', 'apellido', 'curp', 'email', 'password']
-    if not all(campo in datos for campo in campos_requeridos):
-        return jsonify({
-            "exito": False, 
-            "mensaje": "Faltan datos obligatorios"
-        }), 400
-    
-    # Registrar usuario en PostgreSQL
-    resultado = registrar_usuario_nuevo(datos)
-    
-    return jsonify(resultado)
-
-@app.route("/api/login_usuario", methods=["POST"])
-def api_login_usuario():
-    """
-    Endpoint para login de usuarios desde App Inventor.
-    Recibe: email, password
-    Retorna: datos del usuario si las credenciales son correctas
-    """
-    datos = request.get_json(force=True)
-    
-    # Validar campos obligatorios
-    if 'email' not in datos or 'password' not in datos:
-        return jsonify({
-            "exito": False,
-            "mensaje": "Faltan email o password"
-        }), 400
-    
-    # Verificar credenciales
-    resultado = verificar_usuario(datos['email'], datos['password'])
-    
-    # Si el login es exitoso, crear sesión
-    if resultado['exito']:
-        session.clear()
-        session.permanent = True
-        session["user_id"] = datos['email']
-        
-    return jsonify(resultado)
-
 
 def serialize_state(g):
     return {
