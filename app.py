@@ -1,11 +1,17 @@
-# app.py
-from flask import Flask, session, jsonify, send_from_directory, request
+# app.py PARA APP INVENTOR
+from flask import Flask, session, jsonify, send_from_directory, request, make_response
 import random
 import os
-from firebase_config import get_user_balance, update_user_balance
+from db_config import get_user_balance, update_user_balance, registrar_usuario_nuevo, verificar_usuario
 
 app = Flask(__name__, static_folder="static", static_url_path="")
-app.secret_key = os.environ.get("SECRET_KEY", "super-secret-dev-key")  # cámbialo en producción
+app.secret_key = os.environ.get("SECRET_KEY", "super-secret-dev-key")
+
+# Configuración de sesión para App Inventor
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True  # Requiere HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hora
 
 SUITS = ["♠", "♥", "♦", "♣"]
 RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
@@ -101,6 +107,38 @@ def allowed_actions(g):
 
 # -------------------- API -------------------- #
 
+@app.route("/api/login", methods=["GET"])
+def api_login():
+    """
+    Endpoint para iniciar sesión desde App Inventor.
+    Recibe user_id como query param y establece la sesión.
+    """
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({"error": "Falta user_id"}), 400
+    
+    # Limpiar sesión anterior
+    session.clear()
+    session.permanent = True
+    
+    # Guardar user_id en sesión
+    session["user_id"] = user_id
+    
+    # Inicializar juego y cargar saldo desde PostgreSQL
+    g = get_game()
+    save_game(g)
+    
+    # Crear respuesta con cookie de sesión explícita
+    response = make_response(jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "saldo": g["bank"],
+        "message": "Sesión iniciada correctamente"
+    }))
+    
+    return response
+
 @app.route("/")
 def index():
     # Obtener user_id de query params
@@ -120,6 +158,55 @@ def api_state():
     g = get_game()
     save_game(g)
     return jsonify(serialize_state(g))
+
+@app.route("/api/registrar", methods=["POST"])
+def api_registrar():
+    """
+    Endpoint para registrar nuevos usuarios desde App Inventor.
+    Recibe: nombre, apellido, curp, email, password
+    """
+    datos = request.get_json(force=True)
+    
+    # Validar campos obligatorios
+    campos_requeridos = ['nombre', 'apellido', 'curp', 'email', 'password']
+    if not all(campo in datos for campo in campos_requeridos):
+        return jsonify({
+            "exito": False, 
+            "mensaje": "Faltan datos obligatorios"
+        }), 400
+    
+    # Registrar usuario en PostgreSQL
+    resultado = registrar_usuario_nuevo(datos)
+    
+    return jsonify(resultado)
+
+@app.route("/api/login_usuario", methods=["POST"])
+def api_login_usuario():
+    """
+    Endpoint para login de usuarios desde App Inventor.
+    Recibe: email, password
+    Retorna: datos del usuario si las credenciales son correctas
+    """
+    datos = request.get_json(force=True)
+    
+    # Validar campos obligatorios
+    if 'email' not in datos or 'password' not in datos:
+        return jsonify({
+            "exito": False,
+            "mensaje": "Faltan email o password"
+        }), 400
+    
+    # Verificar credenciales
+    resultado = verificar_usuario(datos['email'], datos['password'])
+    
+    # Si el login es exitoso, crear sesión
+    if resultado['exito']:
+        session.clear()
+        session.permanent = True
+        session["user_id"] = datos['email']
+        
+    return jsonify(resultado)
+
 
 def serialize_state(g):
     return {
