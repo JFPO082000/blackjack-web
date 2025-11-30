@@ -1,72 +1,73 @@
-\u003c!-- static/index.html --\u003e
-\u003c!DOCTYPE html\u003e
-\u003chtml lang="es"\u003e
+<!-- static/index.html -->
+<!DOCTYPE html>
+<html lang="es">
 
-\u003chead\u003e
-\u003cmeta charset="UTF-8"\u003e
-\u003ctitle\u003eRoyal Blackjack - Casino Premium\u003c/title\u003e
-\u003cmeta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"\u003e
-\u003cmeta name="description" content="Experiencia premium de blackjack con estilo Royal Crumbs"\u003e
-\u003clink rel="stylesheet" href="style.css"\u003e
-\u003clink rel="stylesheet" href="security.css"\u003e
-\u003c/head\u003e
+<head>
+    <meta charset="UTF-8">
+    <title>Royal Blackjack - Casino Premium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="description" content="Experiencia premium de blackjack con estilo Royal Crumbs">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="security.css">
+</head>
 
-\u003cbody oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;" oncopy="return
-false;"
-oncut="return false;" onpaste="return false;"\u003e
-\u003cdiv class="game-root"\u003e
-\u003cdiv class="table"\u003e
-\u003cdiv class="table-text"\u003e
-\u003cdiv\u003eBLACKJACK ROYAL 1\u003c/div\u003e
-\u003c/div\u003e
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;" oncopy="return
+false;" oncut="return false;" onpaste="return false;">
+    <div class="game-root">
 
-\u003cdiv class="hand dealer-hand"\u003e
-\u003cdiv class="hand-label"\u003eDEALER\u003c/div\u003e
-\u003cdiv class="cards" id="dealer-cards"\u003e\u003c/div\u003e
-\u003cdiv class="hand-value" id="dealer-value"\u003e\u003c/div\u003e
-\u003c/div\u003e
-\u003c/div\u003e
+        <div class="table">
+            <div class="table-text">
+                <div>BLACKJACK ROYAL 1</div>
+            </div>
 
-\u003cdiv class="hand player-hand"\u003e
-\u003cdiv class="hand-label"\u003eJUGADOR\u003c/div\u003e
-\u003cdiv class="cards" id="player-cards"\u003e\u003c/div\u003e
-\u003cdiv class="hand-value" id="player-value"\u003e\u003c/div\u003e
-\u003c/div\u003e
+            <div class="hand dealer-hand">
+                <div class="hand-label">DEALER</div>
+                <div class="cards" id="dealer-cards"></div>
+                <div class="hand-value" id="dealer-value"></div>
+            </div>
+        </div>
 
-\u003cdiv class="side-buttons"\u003e
-\u003cbutton id="btn-double" class="btn side"\u003eDOBLAR\u003c/button\u003e
-\u003cbutton id="btn-hit" class="btn side"\u003ePEDIR\u003c/button\u003e
-\u003cbutton id="btn-stand" class="btn side"\u003eMANTENERSE\u003c/button\u003e
-\u003c/div\u003e
+        <div class="hand player-hand">
+            <div class="hand-label">JUGADOR</div>
+            <div class="cards" id="player-cards"></div>
+            <div class="hand-value" id="player-value"></div>
+        </div>
 
-\u003cdiv class="message" id="message"\u003e\u003c/div\u003e
+        <div class="side-buttons">
+            <button id="btn-double" class="btn side">DOBLAR</button>
+            <button id="btn-hit" class="btn side">PEDIR</button>
+            <button id="btn-stand" class="btn side">MANTENERSE</button>
+        </div>
 
-\u003cdiv class="center-area"\u003e
-\u003cdiv class="bet-circle"\u003e
-\u003cdiv\u003eAPUESTA\u003c/div\u003e
-\u003cdiv id="bet-amount"\u003e$0\u003c/div\u003e
-\u003c/div\u003e
+        <div class="message" id="message"></div>
 
-\u003cdiv class="chips-row"\u003e
-\u003cbutton class="chip chip-5" data-amount="5"\u003e5\u003c/button\u003e
-\u003cbutton class="chip chip-25" data-amount="25"\u003e25\u003c/button\u003e
-\u003cbutton class="chip chip-100" data-amount="100"\u003e100\u003c/button\u003e
-\u003cbutton class="chip chip-500" data-amount="500"\u003e500\u003c/button\u003e
-\u003c/div\u003e
+        <div class="center-area">
+            <div class="bet-circle">
+                <div>APUESTA</div>
+                <div id="bet-amount">$0</div>
+            </div>
 
-\u003cbutton id="clear-bet" class="btn small"\u003eBORRAR APUESTA\u003c/button\u003e
-\u003c/div\u003e
+            <div class="chips-row">
+                <button class="chip chip-5" data-amount="5">5</button>
+                <button class="chip chip-25" data-amount="25">25</button>
+                <button class="chip chip-100" data-amount="100">100</button>
+                <button class="chip chip-500" data-amount="500">500</button>
+            </div>
 
-\u003cdiv class="bottom-bar"\u003e
-\u003cbutton id="btn-main" class="btn main"\u003eREPARTIR\u003c/button\u003e
-\u003cdiv class="bank-display"\u003e
-\u003cspan id="bank-amount"\u003e$0\u003c/span\u003e
-\u003c/div\u003e
-\u003c/div\u003e
-\u003c/div\u003e
+            <button id="clear-bet" class="btn small">BORRAR APUESTA</button>
+        </div>
 
-\u003cscript src="app.js"\u003e\u003c/script\u003e
-\u003cscript src="db-integration.js"\u003e\u003c/script\u003e
-\u003c/body\u003e
+        <div class="bottom-bar">
+            <button id="btn-main" class="btn main">REPARTIR</button>
+            <div class="bank-display">
+                <span id="bank-amount">$0</span>
+            </div>
+        </div>
 
-\u003c/html\u003e
+    </div>
+
+    <script src="app.js"></script>
+    <script src="db-integration.js"></script>
+</body>
+
+</html>
