@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -225,7 +225,12 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
     Si recibe ?user_email=..., busca al usuario, crea un token y lo guarda en cookie.
     Permite login automático desde App Inventor.
     """
-    file_response = FileResponse("static/index.html", media_type="text/html")
+    # Leer el archivo HTML
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    
+    # Crear respuesta HTML
+    html_response = HTMLResponse(content=html_content)
 
     if user_email:
         print(f"🔌 Conexión desde App Inventor para: {user_email}")
@@ -241,7 +246,7 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
             })
             
             # 3. Inyectar Token en la Cookie del navegador
-            file_response.set_cookie(
+            html_response.set_cookie(
                 key="access_token",
                 value=token,
                 httponly=True,
@@ -249,7 +254,7 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
             )
             print(f"✅ Token creado y enviado en cookie para {user_email}")
     
-    return file_response
+    return html_response
 
 # ========== ENDPOINTS DE SALDO ==========
 
