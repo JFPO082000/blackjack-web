@@ -225,12 +225,12 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
     Si recibe ?user_email=..., busca al usuario, crea un token y lo guarda en cookie.
     Permite login automático desde App Inventor.
     """
-    # Leer el archivo HTML
-    with open("static/index.html", "r", encoding="utf-8") as f:
-        html_content = f.read()
-    
-    # Crear respuesta con media_type explícito
-    response = Response(content=html_content, media_type="text/html")
+    # Servir archivo HTML directamente
+    response = FileResponse(
+        path="static/index.html",
+        media_type="text/html",
+        filename="index.html"
+    )
 
     if user_email:
         print(f"🔌 Conexión desde App Inventor para: {user_email}")
