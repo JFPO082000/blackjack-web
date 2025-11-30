@@ -228,8 +228,7 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
     # Servir archivo HTML directamente
     response = FileResponse(
         path="static/index.html",
-        media_type="text/html",
-        filename="index.html"
+        media_type="text/html"
     )
 
     if user_email:
