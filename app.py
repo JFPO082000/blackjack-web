@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -229,8 +229,8 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
     with open("static/index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     
-    # Crear respuesta HTML
-    html_response = HTMLResponse(content=html_content)
+    # Crear respuesta con media_type explícito
+    response = Response(content=html_content, media_type="text/html")
 
     if user_email:
         print(f"🔌 Conexión desde App Inventor para: {user_email}")
@@ -246,7 +246,7 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
             })
             
             # 3. Inyectar Token en la Cookie del navegador
-            html_response.set_cookie(
+            response.set_cookie(
                 key="access_token",
                 value=token,
                 httponly=True,
@@ -254,7 +254,7 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
             )
             print(f"✅ Token creado y enviado en cookie para {user_email}")
     
-    return html_response
+    return response
 
 # ========== ENDPOINTS DE SALDO ==========
 
