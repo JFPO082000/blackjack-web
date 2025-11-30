@@ -151,7 +151,13 @@ def index():
     if user_id:
         session["user_id"] = user_id
     
-    return send_from_directory("static", "index.html")
+    # Leer y retornar HTML explícitamente
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    
+    response = make_response(html_content)
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return response
 
 
 @app.route("/api/state", methods=["GET"])
