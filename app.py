@@ -220,17 +220,6 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
 
 @app.get("/")
 def serve_frontend(request: Request, response: Response, user_email: str = None, db: Session = Depends(get_db)):
-    """
-    Ruta raíz inteligente:
-    Si recibe ?user_email=..., busca al usuario, crea un token y lo guarda en cookie.
-    Permite login automático desde App Inventor.
-    """
-    file_response = FileResponse("static/index.html")
-
-    if user_email:
-        print(f"🔌 Conexión desde App Inventor para: {user_email}")
-        
-        # 1. Buscar usuario en la BD
         user = db.query(Usuario).filter(Usuario.email == user_email).first()
         
         if user:
