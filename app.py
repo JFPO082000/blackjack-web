@@ -1,5 +1,5 @@
 # app.py PARA APP INVENTOR
-from flask import Flask, session, jsonify, send_from_directory, request, make_response
+from flask import Flask, session, jsonify, send_from_directory, request, make_response, Response
 import random
 import os
 from db_config import get_user_balance, update_user_balance
@@ -151,13 +151,11 @@ def index():
     if user_id:
         session["user_id"] = user_id
     
-    # Leer y retornar HTML explícitamente
+    # Leer y retornar HTML con Response
     with open("static/index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     
-    response = make_response(html_content)
-    response.headers['Content-Type'] = 'text/html; charset=utf-8'
-    return response
+    return Response(html_content, mimetype='text/html')
 
 
 @app.route("/api/state", methods=["GET"])
