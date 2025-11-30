@@ -1,20 +1,72 @@
-# app.py PARA APP INVENTOR
-from flask import Flask, session, jsonify, send_from_directory, request, make_response
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from decimal import Decimal
+from typing import Optional
 import random
 import os
-from db_config import get_user_balance, update_user_balance
 
-app = Flask(__name__, static_folder="static", static_url_path="")
-app.secret_key = os.environ.get("SECRET_KEY", "super-secret-dev-key")
+# Importar módulos de base de datos y autenticación
+from database import get_db, test_connection
+from models import Usuario, Saldo
+from auth import verify_password, create_access_token, get_current_user
 
-# Configuración de sesión para App Inventor
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['SESSION_COOKIE_SECURE'] = True  # Requiere HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hora
+app = FastAPI()
+
+# PERMITIR CUALQUIER ORIGEN (web + app inventor)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# SERVIR CARPETA STATIC
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ========== CONSTANTES DEL JUEGO ==========
 
 SUITS = ["♠", "♥", "♦", "♣"]
 RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
+
+# ========== MODELOS DE PYDANTIC ==========
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    token: str
+    user: dict
+
+class SaldoResponse(BaseModel):
+    saldo: float
+    usuario: dict
+
+class BetRequest(BaseModel):
+    amount: int
+
+class GameState(BaseModel):
+    player: list
+    dealer: list
+    player_value: int
+    dealer_value: int
+    bet: int
+    bank: int
+    phase: str
+    message: str
+    allowed_actions: list
+    dealer_hidden: bool
+
+# ========== ALMACENAMIENTO EN MEMORIA PARA ESTADO DEL JUEGO ==========
+# Nota: En producción con múltiples workers, considera usar Redis
+game_states = {}
+
+# ========== FUNCIONES DEL JUEGO ==========
 
 def new_deck():
     deck = [(r, s) for s in SUITS for r in RANKS] * 4
@@ -43,20 +95,14 @@ def hand_value(hand):
 def is_blackjack(hand):
     return len(hand) == 2 and hand_value(hand) == 21
 
-# -------------------- STATE HELPERS -------------------- #
-
-def get_game():
-    """Obtiene el estado actual desde la sesión o crea uno nuevo."""
-    g = session.get("game")
-    user_id = session.get("user_id")
-    
-    if not g:
-        # Cargar saldo inicial desde PostgreSQL si hay user_id
-        initial_bank = 500
-        if user_id:
-            initial_bank = get_user_balance(user_id)
+def get_game_state(user_id: int, db: Session):
+    """Obtiene el estado del juego del usuario o crea uno nuevo"""
+    if user_id not in game_states:
+        # Cargar saldo desde PostgreSQL
+        saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
+        initial_bank = float(saldo_obj.saldo_actual) if saldo_obj else 500
         
-        g = {
+        game_states[user_id] = {
             "deck": new_deck(),
             "player": [],
             "dealer": [],
@@ -67,30 +113,32 @@ def get_game():
         }
     
     # Recarga automática si está en bancarrota
+    g = game_states[user_id]
     if g["bank"] < 5 and g["bet"] == 0:
         g["bank"] = 500
         g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
         # Actualizar en PostgreSQL
-        if user_id:
-            update_user_balance(user_id, g["bank"])
-        
+        saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
+        if saldo_obj:
+            saldo_obj.saldo_actual = Decimal("500")
+            db.commit()
+    
     return g
 
-def save_game(g):
-    session["game"] = g
-    # Sincronizar saldo con PostgreSQL si hay user_id
-    user_id = session.get("user_id")
-    if user_id:
-        update_user_balance(user_id, g["bank"])
+def save_game_state(user_id: int, g: dict, db: Session):
+    """Guarda el estado del juego y sincroniza con PostgreSQL"""
+    game_states[user_id] = g
+    # Sincronizar saldo con PostgreSQL
+    saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
+    if saldo_obj:
+        saldo_obj.saldo_actual = Decimal(str(g["bank"]))
+        db.commit()
 
 def draw_card(g, who):
     if not g["deck"]:
         g["deck"] = new_deck()
     card = g["deck"].pop()
     g[who].append(card)
-
-def set_message(g, msg):
-    g["message"] = msg
 
 def allowed_actions(g):
     phase = g["phase"]
@@ -105,61 +153,6 @@ def allowed_actions(g):
         actions = ["new_round"]
     return actions
 
-# -------------------- API -------------------- #
-
-@app.route("/api/login", methods=["GET"])
-def api_login():
-    """
-    Endpoint para iniciar sesión desde App Inventor.
-    Recibe user_id como query param y establece la sesión.
-    """
-    user_id = request.args.get('user_id')
-    
-    if not user_id:
-        return jsonify({"error": "Falta user_id"}), 400
-    
-    # Limpiar sesión anterior
-    session.clear()
-    session.permanent = True
-    
-    # Guardar user_id en sesión
-    session["user_id"] = user_id
-    
-    # Inicializar juego y cargar saldo desde PostgreSQL
-    g = get_game()
-    save_game(g)
-    
-    # Crear respuesta con cookie de sesión explícita
-    response = make_response(jsonify({
-        "status": "success",
-        "user_id": user_id,
-        "saldo": g["bank"],
-        "message": "Sesión iniciada correctamente"
-    }))
-    
-    return response
-
-@app.route("/")
-def index():
-    # Obtener user_id de query params
-    user_id = request.args.get('user_id')
-    
-    # Reiniciar juego al cargar la página
-    session.clear()
-    
-    # Guardar user_id en sesión si existe
-    if user_id:
-        session["user_id"] = user_id
-    
-    return send_from_directory("static", "index.html")
-
-
-@app.route("/api/state", methods=["GET"])
-def api_state():
-    g = get_game()
-    save_game(g)
-    return jsonify(serialize_state(g))
-
 def serialize_state(g):
     return {
         "player": g["player"],
@@ -171,162 +164,301 @@ def serialize_state(g):
         "phase": g["phase"],
         "message": g["message"],
         "allowed_actions": allowed_actions(g),
-        # ocultamos la segunda carta del dealer mientras está en fase PLAYER
         "dealer_hidden": g["phase"] == "PLAYER" and len(g["dealer"]) >= 2
     }
 
-@app.route("/api/bet", methods=["POST"])
-def api_bet():
-    g = get_game()
+def resolve_blackjack(g):
+    p = is_blackjack(g["player"])
+    d = is_blackjack(g["dealer"])
+    if p and d:
+        g["message"] = "EMPATE"
+    elif p:
+        win = int(g["bet"] * 1.5)
+        g["bank"] += win
+        g["message"] = f"¡BLACKJACK! +${win}"
+    else:
+        g["bank"] -= g["bet"]
+        g["message"] = "BLACKJACK DEL DEALER"
+    g["phase"] = "END"
+
+# ========== ENDPOINTS DE AUTENTICACIÓN ==========
+
+@app.post("/api/auth/login", response_model=LoginResponse)
+def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+    """Login con email y password"""
+    user = db.query(Usuario).filter(Usuario.email == credentials.email).first()
+    
+    if not user or not user.activo:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos"
+        )
+    
+    if not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos"
+        )
+    
+    # Crear token JWT
+    token = create_access_token({
+        "sub": str(user.id_usuario),
+        "email": user.email
+    })
+    
+    return LoginResponse(
+        token=token,
+        user={
+            "id_usuario": user.id_usuario,
+            "nombre": user.nombre,
+            "apellido": user.apellido,
+            "email": user.email
+        }
+    )
+
+# ========== ENDPOINT RAÍZ CON LOGIN AUTOMÁTICO ==========
+
+@app.get("/")
+def serve_frontend(request: Request, response: Response, user_email: str = None, db: Session = Depends(get_db)):
+    """
+    Ruta raíz inteligente:
+    Si recibe ?user_email=..., busca al usuario, crea un token y lo guarda en cookie.
+    Permite login automático desde App Inventor.
+    """
+    file_response = FileResponse("static/index.html")
+
+    if user_email:
+        print(f"🔌 Conexión desde App Inventor para: {user_email}")
+        
+        # 1. Buscar usuario en la BD
+        user = db.query(Usuario).filter(Usuario.email == user_email).first()
+        
+        if user:
+            # 2. Crear Token automáticamente (Login sin contraseña)
+            token = create_access_token({
+                "sub": str(user.id_usuario),
+                "email": user.email
+            })
+            
+            # 3. Inyectar Token en la Cookie del navegador
+            file_response.set_cookie(
+                key="access_token",
+                value=token,
+                httponly=True,
+                samesite="lax"
+            )
+            print(f"✅ Token creado y enviado en cookie para {user_email}")
+    
+    return file_response
+
+# ========== ENDPOINTS DE SALDO ==========
+
+@app.get("/api/saldo", response_model=SaldoResponse)
+def get_saldo(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Obtener saldo actual del usuario autenticado"""
+    saldo = db.query(Saldo).filter(Saldo.id_usuario == current_user.id_usuario).first()
+    
+    if not saldo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Saldo no encontrado"
+        )
+    
+    return SaldoResponse(
+        saldo=float(saldo.saldo_actual),
+        usuario={
+            "nombre": current_user.nombre,
+            "apellido": current_user.apellido
+        }
+    )
+
+# ========== ENDPOINTS DEL JUEGO BLACKJACK ==========
+
+@app.get("/api/state", response_model=GameState)
+def api_state(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Obtener estado actual del juego"""
+    g = get_game_state(current_user.id_usuario, db)
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
+
+@app.post("/api/bet", response_model=GameState)
+def api_bet(bet_req: BetRequest, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Hacer una apuesta"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] != "BETTING":
-        return jsonify(serialize_state(g))
-    data = request.get_json(force=True)
-    amount = int(data.get("amount", 0))
+        return serialize_state(g)
+    
+    amount = bet_req.amount
     if amount > 0 and g["bet"] + amount <= g["bank"]:
         g["bet"] += amount
-        set_message(g, f"APUESTA: ${g['bet']}")
+        g["message"] = f"APUESTA: ${g['bet']}"
     else:
-        set_message(g, "FONDOS INSUFICIENTES")
-    save_game(g)
-    return jsonify(serialize_state(g))
+        g["message"] = "FONDOS INSUFICIENTES"
+    
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-@app.route("/api/clear_bet", methods=["POST"])
-def api_clear_bet():
-    g = get_game()
+@app.post("/api/clear_bet", response_model=GameState)
+def api_clear_bet(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Borrar apuesta"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] == "BETTING":
         g["bet"] = 0
-        set_message(g, "APUESTA BORRADA")
-    save_game(g)
-    return jsonify(serialize_state(g))
+        g["message"] = "APUESTA BORRADA"
+    
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-@app.route("/api/deal", methods=["POST"])
-def api_deal():
-    g = get_game()
+@app.post("/api/deal", response_model=GameState)
+def api_deal(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Repartir cartas"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] != "BETTING":
-        return jsonify(serialize_state(g))
+        return serialize_state(g)
+    
     if g["bet"] <= 0:
-        set_message(g, "HAZ UNA APUESTA")
-        save_game(g)
-        return jsonify(serialize_state(g))
+        g["message"] = "HAZ UNA APUESTA"
+        save_game_state(current_user.id_usuario, g, db)
+        return serialize_state(g)
+    
     if g["bet"] > g["bank"]:
-        set_message(g, "FONDOS INSUFICIENTES")
-        save_game(g)
-        return jsonify(serialize_state(g))
+        g["message"] = "FONDOS INSUFICIENTES"
+        save_game_state(current_user.id_usuario, g, db)
+        return serialize_state(g)
 
-    # limpiar manos
+    # Limpiar manos
     g["player"] = []
     g["dealer"] = []
 
-    # repartir
+    # Repartir
     draw_card(g, "player")
     draw_card(g, "dealer")
     draw_card(g, "player")
     draw_card(g, "dealer")
 
     g["phase"] = "PLAYER"
-    set_message(g, "")
+    g["message"] = ""
 
-    # verificar blackjack
+    # Verificar blackjack
     if is_blackjack(g["player"]) or is_blackjack(g["dealer"]):
         resolve_blackjack(g)
 
-    save_game(g)
-    return jsonify(serialize_state(g))
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-def resolve_blackjack(g):
-    p = is_blackjack(g["player"])
-    d = is_blackjack(g["dealer"])
-    if p and d:
-        set_message(g, "EMPATE")
-    elif p:
-        win = int(g["bet"] * 1.5)
-        g["bank"] += win
-        set_message(g, f"¡BLACKJACK! +${win}")
-    else:
-        g["bank"] -= g["bet"]
-        set_message(g, "BLACKJACK DEL DEALER")
-    g["phase"] = "END"
-
-@app.route("/api/hit", methods=["POST"])
-def api_hit():
-    g = get_game()
+@app.post("/api/hit", response_model=GameState)
+def api_hit(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Pedir carta"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] != "PLAYER":
-        return jsonify(serialize_state(g))
+        return serialize_state(g)
+    
     draw_card(g, "player")
     if hand_value(g["player"]) > 21:
         g["bank"] -= g["bet"]
-        set_message(g, "TE PASASTE")
+        g["message"] = "TE PASASTE"
         g["phase"] = "END"
-    save_game(g)
-    return jsonify(serialize_state(g))
+    
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-@app.route("/api/stand", methods=["POST"])
-def api_stand():
-    g = get_game()
+@app.post("/api/stand", response_model=GameState)
+def api_stand(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mantenerse"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] != "PLAYER":
-        return jsonify(serialize_state(g))
-    # turno dealer
+        return serialize_state(g)
+    
+    # Turno dealer
     while hand_value(g["dealer"]) < 17:
         draw_card(g, "dealer")
+    
     pv = hand_value(g["player"])
     dv = hand_value(g["dealer"])
+    
     if dv > 21:
         g["bank"] += g["bet"]
-        set_message(g, "DEALER SE PASÓ • GANASTE")
+        g["message"] = "DEALER SE PASÓ • GANASTE"
     elif pv > dv:
         g["bank"] += g["bet"]
-        set_message(g, "GANASTE")
+        g["message"] = "GANASTE"
     elif pv < dv:
         g["bank"] -= g["bet"]
-        set_message(g, "PERDISTE")
+        g["message"] = "PERDISTE"
     else:
-        set_message(g, "EMPATE")
+        g["message"] = "EMPATE"
+    
     g["phase"] = "END"
-    save_game(g)
-    return jsonify(serialize_state(g))
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-@app.route("/api/double", methods=["POST"])
-def api_double():
-    g = get_game()
+@app.post("/api/double", response_model=GameState)
+def api_double(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Doblar apuesta"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     if g["phase"] != "PLAYER":
-        return jsonify(serialize_state(g))
+        return serialize_state(g)
+    
     if len(g["player"]) != 2 or g["bet"] * 2 > g["bank"]:
-        return jsonify(serialize_state(g))
+        return serialize_state(g)
 
     g["bank"] -= g["bet"]
     g["bet"] *= 2
     draw_card(g, "player")
+    
     if hand_value(g["player"]) > 21:
-        set_message(g, "TE PASASTE")
+        g["message"] = "TE PASASTE"
         g["phase"] = "END"
     else:
-        # como en casino: doble = 1 carta y stand automático
+        # Doble = 1 carta y stand automático
         while hand_value(g["dealer"]) < 17:
             draw_card(g, "dealer")
+        
         pv = hand_value(g["player"])
         dv = hand_value(g["dealer"])
+        
         if dv > 21 or pv > dv:
             g["bank"] += g["bet"]
-            set_message(g, "GANASTE")
+            g["message"] = "GANASTE"
         elif pv < dv:
-            set_message(g, "PERDISTE")
+            g["message"] = "PERDISTE"
         else:
-            set_message(g, "EMPATE")
+            g["message"] = "EMPATE"
+        
         g["phase"] = "END"
-    save_game(g)
-    return jsonify(serialize_state(g))
+    
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-@app.route("/api/new_round", methods=["POST"])
-def api_new_round():
-    g = get_game()
+@app.post("/api/new_round", response_model=GameState)
+def api_new_round(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Nueva ronda"""
+    g = get_game_state(current_user.id_usuario, db)
+    
     g["player"] = []
     g["dealer"] = []
     g["bet"] = 0
     g["phase"] = "BETTING"
-    set_message(g, "HAZ TU APUESTA")
-    save_game(g)
-    return jsonify(serialize_state(g))
+    g["message"] = "HAZ TU APUESTA"
+    
+    save_game_state(current_user.id_usuario, g, db)
+    return serialize_state(g)
 
-# ----------------- DEV HELPER ----------------- #
+# ========== STARTUP ==========
+
+@app.on_event("startup")
+def startup_event():
+    """Verificar conexión a base de datos al iniciar"""
+    print("🚀 Iniciando aplicación Blackjack...")
+    test_connection()
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

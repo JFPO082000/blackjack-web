@@ -2,13 +2,13 @@
 
 // ===== CAPA DE SEGURIDAD =====
 // Prevenir teclas de desarrollador y atajos
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
   // F12 - DevTools
   if (e.key === 'F12' || e.keyCode === 123) {
     e.preventDefault();
     return false;
   }
-  
+
   // Ctrl+Shift+I - Inspector
   // Ctrl+Shift+J - Console
   // Ctrl+Shift+C - Selector de elementos
@@ -17,18 +17,18 @@ document.addEventListener('keydown', function(e) {
     e.preventDefault();
     return false;
   }
-  
+
   if (e.ctrlKey && e.key === 'u') {
     e.preventDefault();
     return false;
   }
-  
+
   // Ctrl+S - Guardar página
   if (e.ctrlKey && e.key === 's') {
     e.preventDefault();
     return false;
   }
-  
+
   // Ctrl+P - Imprimir
   if (e.ctrlKey && e.key === 'p') {
     e.preventDefault();
@@ -37,49 +37,49 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Prevenir clic derecho (menú contextual)
-document.addEventListener('contextmenu', function(e) {
+document.addEventListener('contextmenu', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Prevenir selección de texto
-document.addEventListener('selectstart', function(e) {
+document.addEventListener('selectstart', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Prevenir copiar
-document.addEventListener('copy', function(e) {
+document.addEventListener('copy', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Prevenir cortar
-document.addEventListener('cut', function(e) {
+document.addEventListener('cut', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Prevenir pegar
-document.addEventListener('paste', function(e) {
+document.addEventListener('paste', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Prevenir arrastre
-document.addEventListener('dragstart', function(e) {
+document.addEventListener('dragstart', function (e) {
   e.preventDefault();
   return false;
 });
 
 // Detectar si DevTools está abierto (método adicional)
-(function() {
+(function () {
   const devtools = /./;
-  devtools.toString = function() {
+  devtools.toString = function () {
     this.opened = true;
   };
-  
-  const checkDevTools = setInterval(function() {
+
+  const checkDevTools = setInterval(function () {
     console.log('%c', devtools);
     if (devtools.opened) {
       // DevTools detectado - puedes agregar acciones aquí si lo deseas
@@ -90,11 +90,11 @@ document.addEventListener('dragstart', function(e) {
 
 // Deshabilitar console.log en producción (opcional)
 if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-  console.log = function() {};
-  console.warn = function() {};
-  console.error = function() {};
-  console.info = function() {};
-  console.debug = function() {};
+  console.log = function () { };
+  console.warn = function () { };
+  console.error = function () { };
+  console.info = function () { };
+  console.debug = function () { };
 }
 // ===== FIN CAPA DE SEGURIDAD =====
 
@@ -102,6 +102,7 @@ async function api(path, body, method = "POST") {
   const res = await fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
+    credentials: 'include',  // CLAVE: Envía cookies automáticamente
     body: body ? JSON.stringify(body) : null
   });
   return await res.json();
