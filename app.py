@@ -97,20 +97,24 @@ def is_blackjack(hand):
 
 def get_game_state(user_id: int, db: Session):
     """Obtiene el estado del juego del usuario o crea uno nuevo"""
+    # Siempre obtener saldo actualizado desde PostgreSQL
+    saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
+    current_bank = float(saldo_obj.saldo_actual) if saldo_obj else 500
+    
     if user_id not in game_states:
-        # Cargar saldo desde PostgreSQL
-        saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
-        initial_bank = float(saldo_obj.saldo_actual) if saldo_obj else 500
-        
+        # Crear nuevo estado de juego
         game_states[user_id] = {
             "deck": new_deck(),
             "player": [],
             "dealer": [],
             "bet": 0,
-            "bank": initial_bank,
+            "bank": current_bank,
             "phase": "BETTING",  # BETTING, PLAYER, DEALER, END
             "message": "HAZ TU APUESTA",
         }
+    else:
+        # Actualizar bank con el valor de la BD (sincronizar)
+        game_states[user_id]["bank"] = current_bank
     
     # Recarga automática si está en bancarrota
     g = game_states[user_id]
@@ -118,7 +122,6 @@ def get_game_state(user_id: int, db: Session):
         g["bank"] = 500
         g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
         # Actualizar en PostgreSQL
-        saldo_obj = db.query(Saldo).filter(Saldo.id_usuario == user_id).first()
         if saldo_obj:
             saldo_obj.saldo_actual = Decimal("500")
             db.commit()
