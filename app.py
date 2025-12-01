@@ -116,17 +116,7 @@ def get_game_state(user_id: int, db: Session):
         # Actualizar bank con el valor de la BD (sincronizar)
         game_states[user_id]["bank"] = current_bank
     
-    # Recarga automática si está en bancarrota
-    g = game_states[user_id]
-    if g["bank"] < 5 and g["bet"] == 0:
-        g["bank"] = 500
-        g["message"] = "¡BANCARROTA! TE REGALAMOS $500"
-        # Actualizar en PostgreSQL
-        if saldo_obj:
-            saldo_obj.saldo_actual = Decimal("500")
-            db.commit()
-    
-    return g
+    return game_states[user_id]
 
 def save_game_state(user_id: int, g: dict, db: Session):
     """Guarda el estado del juego y sincroniza con PostgreSQL"""
