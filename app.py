@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -176,8 +176,24 @@ def resolve_blackjack(g):
 
 # ========== ENDPOINTS DE AUTENTICACIÓN ==========
 
+    response = LoginResponse(
+        token=token,
+        user={
+            "id_usuario": user.id_usuario,
+            "nombre": user.nombre,
+            "apellido": user.apellido,
+            "email": user.email
+        }
+    )
+    
+    # Inyectar Token en la Cookie del navegador (para acceso web directo)
+    # Usamos Response de FastAPI que se puede inyectar en el endpoint si se declara,
+    # pero como estamos retornando un modelo Pydantic, necesitamos usar un truco o cambiar la firma.
+    # Mejor opción: Usar Response como parámetro y setear cookie.
+    return response
+
 @app.post("/api/auth/login", response_model=LoginResponse)
-def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+def login(credentials: LoginRequest, response: Response, db: Session = Depends(get_db)):
     """Login con email y password"""
     user = db.query(Usuario).filter(Usuario.email == credentials.email).first()
     
@@ -198,6 +214,15 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
         "sub": str(user.id_usuario),
         "email": user.email
     })
+    
+    # Setear cookie para persistencia en web
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=7 * 24 * 60 * 60  # 7 días
+    )
     
     return LoginResponse(
         token=token,
@@ -220,20 +245,16 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
     """
     file_response = FileResponse("static/index.html")
 
+    # 1. Caso App Inventor: ?user_email=...
     if user_email:
         print(f"🔌 Conexión desde App Inventor para: {user_email}")
-        
-        # 1. Buscar usuario en la BD
         user = db.query(Usuario).filter(Usuario.email == user_email).first()
         
         if user:
-            # 2. Crear Token automáticamente (Login sin contraseña)
             token = create_access_token({
                 "sub": str(user.id_usuario),
                 "email": user.email
             })
-            
-            # 3. Inyectar Token en la Cookie del navegador
             file_response.set_cookie(
                 key="access_token",
                 value=token,
@@ -241,8 +262,25 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
                 samesite="lax"
             )
             print(f"✅ Token creado y enviado en cookie para {user_email}")
-    
-    return file_response
+        return file_response
+
+    # 2. Caso Web Directo: Verificar si ya tiene cookie válida
+    token = request.cookies.get("access_token")
+    if token:
+        # Aquí podríamos validar el token, pero si es inválido, 
+        # las llamadas a API fallarán (401) y el frontend redirigirá a login.
+        # Para ser más robustos, podemos intentar decodificarlo rápido.
+        from auth import decode_token
+        if decode_token(token):
+            return file_response
+
+    # 3. Si no hay auth, redirigir a Login
+    return RedirectResponse(url="/login")
+
+@app.get("/login")
+def serve_login():
+    """Servir página de login"""
+    return FileResponse("static/login.html")
 
 # ========== ENDPOINTS DE SALDO ==========
 

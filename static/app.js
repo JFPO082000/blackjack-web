@@ -105,6 +105,12 @@ async function api(path, body, method = "POST") {
     credentials: 'include',  // CLAVE: Envía cookies automáticamente
     body: body ? JSON.stringify(body) : null
   });
+
+  if (res.status === 401) {
+    window.location.href = "/login";
+    return;
+  }
+
   return await res.json();
 }
 
