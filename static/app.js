@@ -107,8 +107,9 @@ async function api(path, body, method = "POST") {
   });
 
   if (res.status === 401) {
-    window.location.href = "/login";
-    return;
+    console.warn("⚠️ No autenticado. Se requiere acceso previo o parámetro user_email.");
+    // No redirigir a login, solo loguear.
+    return { error: "Unauthorized" };
   }
 
   return await res.json();

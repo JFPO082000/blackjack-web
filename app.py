@@ -274,13 +274,10 @@ def serve_frontend(request: Request, response: Response, user_email: str = None,
         if decode_token(token):
             return file_response
 
-    # 3. Si no hay auth, redirigir a Login
-    return RedirectResponse(url="/login")
-
-@app.get("/login")
-def serve_login():
-    """Servir página de login"""
-    return FileResponse("static/login.html")
+    # 3. Si no hay auth, servir index.html de todas formas
+    # El frontend manejará el estado "no autenticado" (ej. sin saldo, sin juego)
+    # o esperará a que el usuario entre con ?user_email=...
+    return file_response
 
 # ========== ENDPOINTS DE SALDO ==========
 
